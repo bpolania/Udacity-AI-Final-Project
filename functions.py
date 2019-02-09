@@ -1,5 +1,6 @@
 import os
 import torch
+import torchvision
 import numpy as np
 import torch.nn.functional as F
 
@@ -24,7 +25,9 @@ class Functions:
     # Loads a checkpoint and rebuilds the model
     def load_checkpoint(self, filepath):
         checkpoint = torch.load(filepath + "/checkpoint.pth")
-        model = checkpoint['model']
+        model = getattr(torchvision.models, checkpoint["arch"])(pretrained=True)
+        model.classifier = checkpoint['classifier']
+        model.load_state_dict(checkpoint['state_dict'])
         return model
 
     # Training function

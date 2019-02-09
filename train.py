@@ -21,7 +21,7 @@ parser.add_argument('--arch', action='store',
 parser.add_argument('--hidden_units', action='store',
                     dest='hidden_units',
                     type=int,
-                    default=25088,
+                    default=500,
                     help='Number of inputs for classifier input layer')
 parser.add_argument('--learning_rate', action='store',
                     dest='learning_rate',
@@ -37,6 +37,7 @@ parser.add_argument('--gpu', action='store_true',
                     help='Use gpu for processing')
 parser.add_argument('--save_dir', action='store',
                     dest='save_dir',
+                    default="checkpoints"
                     help='the directory to save the checkpoint')
 
 # Get arguments
@@ -74,11 +75,20 @@ if len(sys.argv) > 0:
                                                                [0.229, 0.224, 0.225])])
 
 
+    valid_transforms = transforms.Compose([transforms.Resize(256),
+                                       transforms.CenterCrop(224),
+                                       transforms.ToTensor(),
+                                       transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                                       std=[0.229, 0.224, 0.225])])
+
+
     train_data = datasets.ImageFolder(train_dir, transform=train_transforms)
     test_data = datasets.ImageFolder(test_dir, transform=test_transforms)
+    valid_data = datasets.ImageFolder(valid_dir, transform=valid_transforms)
 
     trainloader = torch.utils.data.DataLoader(train_data, batch_size=64, shuffle=True)
     testloader = torch.utils.data.DataLoader(test_data, batch_size=32)
+    validloader = torch.utils.data.DataLoader(valid_data, batch_size=32)
 
     ## Building and training the classifier
     # Define a new, untrained feed-forward network as a classifier, using ReLU activations and dropout
@@ -87,9 +97,9 @@ if len(sys.argv) > 0:
     
     f = functions.Functions()
     classifier = nn.Sequential(OrderedDict([
-                              ('fc1', nn.Linear(args.hidden_units, 500)),
+                              ('fc1', nn.Linear(model.classifier[0].in_features, args.hidden_units)),
                               ('relu', nn.ReLU()),
-                              ('fc2', nn.Linear(500, f.number_of_categories(train_dir))),
+                              ('fc2', nn.Linear(args.hidden_units, f.number_of_categories(train_dir))),
                               ('output', nn.LogSoftmax(dim=1))
                               ]))
 
@@ -110,7 +120,9 @@ if len(sys.argv) > 0:
     if args.save_dir:
         # Set Checkpoint
         checkpoint = {'input_size': args.hidden_units,
-                      'model': model}
+                      'arch'      : args.architecture,
+                      'classifier': model.classifier,
+                      'state_dict': model.state_dict()}
         # Save model
         f.save_model(checkpoint, args.save_dir)
 else:
