@@ -17,7 +17,7 @@ parser.add_argument('data_dir', action='store',
 parser.add_argument('--arch', action='store',
                     dest='architecture',
                     default="vgg16",
-                    help='Model Architecture with options: alexnet, vgg11, vgg11_bn, vgg13, vgg13_bn, vgg16, vgg16_bn, vgg19, vgg19_bn, resnet18, resnet34, resnet50, resnet101, resnet152, squeezenet1_0, squeezenet1_1, densenet121, densenet161, densenet169, densenet201, inception_v3')
+                    help='Model Architecture with options: alexnet, vgg11, vgg11_bn, vgg13, vgg13_bn, vgg16, vgg16_bn, vgg19, vgg19_bn')
 parser.add_argument('--hidden_units', action='store',
                     dest='hidden_units',
                     type=int,
@@ -37,9 +37,10 @@ parser.add_argument('--gpu', action='store_true',
                     help='Use gpu for processing')
 parser.add_argument('--save_dir', action='store',
                     dest='save_dir',
-                    default="checkpoints"
+                    default="checkpoints",
                     help='the directory to save the checkpoint')
 
+# python train.py flowers --epochs 1 --gpu
 # Get arguments
 args = parser.parse_args()
 
@@ -110,7 +111,7 @@ if len(sys.argv) > 0:
     optimizer = optim.Adam(model.classifier.parameters(), lr=args.learning_rate)
     
     
-    f.do_deep_learning(model, trainloader, args.epochs, 40, criterion, optimizer, device)
+    f.do_deep_learning(model, trainloader, validloader, args.epochs, 40, criterion, optimizer, device)
 
     ## Testing the Network
     # Do validation on the test set

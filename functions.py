@@ -31,7 +31,7 @@ class Functions:
         return model
 
     # Training function
-    def do_deep_learning(self, model, trainloader, epochs, print_every, criterion, optimizer, device):
+    def do_deep_learning(self, model, trainloader, validloader, epochs, print_every, criterion, optimizer, device):
         epochs = epochs
         print_every = print_every
         steps = 0
@@ -57,10 +57,21 @@ class Functions:
                 running_loss += loss.item()
 
                 if steps % print_every == 0:
-                    print("Epoch: {}/{}... ".format(e+1, epochs), running_loss,
-                          "Loss: {:.4f}".format(running_loss/print_every))
+                    model.eval()
+            
+                    # Turn off gradients for validation, saves memory and computations
+                    with torch.no_grad():
+                        test_loss, accuracy = self.validation(model, validloader, criterion)
+
+                    print("Epoch: {}/{}.. ".format(e+1, epochs),
+                          "Training Loss: {:.3f}.. ".format(running_loss/print_every),
+                          "Test Loss: {:.3f}.. ".format(test_loss/len(validloader)),
+                          "Test Accuracy: {:.3f}".format(accuracy/len(validloader)))
 
                     running_loss = 0
+
+                    # Make sure training is back on
+                    model.train()
 
     # Check accuracy function
     def check_accuracy_on_test(self, testloader, model, device):    
@@ -101,30 +112,6 @@ class Functions:
             model = models.vgg19(pretrained=True)
         elif architecture == "vgg19_bn":
             model = models.vgg19_bn(pretrained=True)
-        elif architecture == "resnet18":
-            model = models.resnet18(pretrained=True)
-        elif architecture == "resnet34":
-            model = models.resnet34(pretrained=True)
-        elif architecture == "resnet50":
-            model = models.resnet50(pretrained=True)
-        elif architecture == "resnet101":
-            model = models.resnet101(pretrained=True)
-        elif architecture == "resnet152":
-            model = models.resnet152(pretrained=True)
-        elif architecture == "squeezenet1_0":
-            model = models.squeezenet1_0(pretrained=True)
-        elif architecture == "squeezenet1_1":
-            model = models.squeezenet1_1(pretrained=True)
-        elif architecture == "densenet121":
-            model = models.densenet121(pretrained=True)
-        elif architecture == "densenet161":
-            model = models.densenet161(pretrained=True)
-        elif architecture == "densenet169":
-            model = models.densenet169(pretrained=True)
-        elif architecture == "densenet201":
-            model = models.densenet201(pretrained=True)
-        elif architecture == "inception_v3":
-            model = models.inception_v3(pretrained=True)
         return model
     
     # Process a PIL image for use in a PyTorch model
@@ -154,3 +141,18 @@ class Functions:
         ps = F.softmax(logits,dim=1)
         topk = ps.cpu().topk(topk)
         return (e.data.numpy().squeeze().tolist() for e in topk)
+    
+    def validation(self, model, validloader, criterion):
+        test_loss = 0
+        accuracy = 0
+        for images, labels in validloader:
+            images = images.to('cuda')
+            output = model.forward(images)
+            output, labels = output.to('cuda'), labels.to('cuda')
+            test_loss += criterion(output, labels).item()
+
+            ps = torch.exp(output)
+            equality = (labels.data == ps.max(dim=1)[1])
+            accuracy += equality.type(torch.FloatTensor).mean()
+
+        return test_loss, accuracy

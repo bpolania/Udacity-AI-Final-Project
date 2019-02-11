@@ -26,6 +26,7 @@ parser.add_argument('--gpu', action='store_true',
                     dest='gpu',
                     help='Use gpu for processing')
 
+# python predict.py flowers/valid/1/image_06739.jpg checkpoints --category_names cat_to_name.json --gpu
 # Get arguments
 args = parser.parse_args()
 
